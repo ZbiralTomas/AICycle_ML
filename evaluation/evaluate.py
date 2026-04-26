@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from dataclasses import dataclass, field
 from itertools import combinations
@@ -365,6 +366,52 @@ def print_mcnemar_table(comparisons: List[Dict], alpha_corrected: float) -> None
               f"{comp['chi2']:>8.4f} {comp['p_value']:>10.6f} {sig:>12}")
 
 
+# ─── CSV writers ──────────────────────────────────────────────────────────────
+
+def write_metrics_csv(
+    csv_path: Path,
+    model_names: List[str],
+    all_metrics: List[Dict],
+    all_ci: List[Dict],
+) -> None:
+    """One row per model: aggregate metrics + bootstrap CIs + per-class AP."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    headers = [
+        "model",
+        "mAP50", "mAP50_ci_lo", "mAP50_ci_hi",
+        "precision", "prec_ci_lo", "prec_ci_hi",
+        "recall", "rec_ci_lo", "rec_ci_hi",
+    ] + [f"AP_{c}" for c in CLASSES]
+
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(headers)
+        for name, m, ci in zip(model_names, all_metrics, all_ci):
+            row = [
+                name,
+                f"{m['mAP50']:.6f}",     f"{ci['mAP50'][0]:.6f}",     f"{ci['mAP50'][1]:.6f}",
+                f"{m['precision']:.6f}", f"{ci['precision'][0]:.6f}", f"{ci['precision'][1]:.6f}",
+                f"{m['recall']:.6f}",    f"{ci['recall'][0]:.6f}",    f"{ci['recall'][1]:.6f}",
+            ] + [f"{m['per_class_ap'][c]:.6f}" for c in CLASSES]
+            w.writerow(row)
+
+
+def write_mcnemar_csv(csv_path: Path, comparisons: List[Dict], alpha_corrected: float) -> None:
+    """One row per pairwise comparison."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    headers = ["pair", "b", "c", "n_discordant", "chi2", "p_value", "alpha_corrected", "significant"]
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(headers)
+        for comp in comparisons:
+            w.writerow([
+                comp["pair"], comp["b"], comp["c"], comp["n_discordant"],
+                f"{comp['chi2']:.4f}", f"{comp['p_value']:.6f}",
+                f"{alpha_corrected:.4f}",
+                "yes" if comp["p_value"] < alpha_corrected else "no",
+            ])
+
+
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def build_argparser() -> argparse.ArgumentParser:
@@ -391,6 +438,9 @@ def build_argparser() -> argparse.ArgumentParser:
                     help="Significance level before Bonferroni correction (default: 0.05).")
     ap.add_argument("--output", type=Path, default=None,
                     help="Save full results to JSON.")
+    ap.add_argument("--csv", type=Path, default=None,
+                    help="Save per-model metrics + bootstrap CIs to CSV. "
+                         "If 2+ models, also writes <csv>_mcnemar.csv with pairwise tests.")
     return ap
 
 
@@ -480,6 +530,15 @@ def main() -> None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(output, indent=2), encoding="utf-8")
         print(f"\nResults saved to {args.output}")
+
+    # ── Save CSV ──
+    if args.csv:
+        write_metrics_csv(args.csv, args.model_names, all_metrics, all_ci)
+        print(f"Metrics CSV saved to {args.csv}")
+        if n_models >= 2:
+            mcnemar_csv = args.csv.with_name(args.csv.stem + "_mcnemar" + args.csv.suffix)
+            write_mcnemar_csv(mcnemar_csv, comparisons, alpha_corrected)
+            print(f"McNemar CSV saved to {mcnemar_csv}")
 
     print(f"\n{'=' * 72}")
     print("Evaluation complete.")
