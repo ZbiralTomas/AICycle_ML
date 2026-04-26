@@ -121,16 +121,14 @@ Reads from `data/datasets/real/train/{images,masks}/`, saves to `data/datasets/n
 **2b. Normalize all scenes** using the computed parameters. Applies percentile clip and scale to match the real data distribution.
 
 ```bash
-# Save to *_normalized/ directories (originals preserved)
 python data_preprocessing/normalize_scenes.py
-
-# Or overwrite originals in-place
-python data_preprocessing/normalize_scenes.py --overwrite
 ```
 
-Processes all images in `data/datasets/{real,synthetic2D,synthetic3D}/{train,val,test}/images/`.
+Reads from `data/datasets/{real,synthetic2D,synthetic3D}/{train,val,test}/images/`, writes to the matching `*_normalized/` dirs. Originals are preserved — re-running is idempotent because each run derives `*_normalized/` freshly from the unchanged source images. The `--overwrite` flag exists but is **not recommended**: normalization is *not* idempotent (running it twice on the same image stretches contrast a second time), so overwriting originals risks silent data corruption on a second run.
 
 **2c. Create YOLO-format datasets.** Resizes images to 1024x1024, converts pixel masks to bounding-box labels, and generates `dataset.yaml` files.
+
+Reads images from `data/datasets/*_normalized/` (must run step 2b first) and masks from the un-normalized `data/datasets/*/{train,val,test}/masks/` dirs.
 
 ```bash
 python data_preprocessing/create_yaml_files.py

@@ -3,7 +3,7 @@
 # --- Part 1: Resources ---
 #PBS -q gpu
 #PBS -l walltime=72:00:00
-#PBS -l select=1:ncpus=16:ngpus=1:mem=80gb:scratch_local=150gb:gpu_mem=40gb
+#PBS -l select=1:ncpus=16:ngpus=1:mem=80gb:scratch_local=150gb:gpu_mem=80gb
 #PBS -N AICycle_yolo11s_multi
 #PBS -m ae
 

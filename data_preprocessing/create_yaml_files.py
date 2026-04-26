@@ -2,8 +2,15 @@
 """
 Convert source data (scenes + pixel masks) into YOLO-format datasets.
 
-Reads from:   data/datasets/{real,synthetic2D,synthetic3D}/{train,val,test}/{images,masks}/
-Writes to:    data/yaml/{real,synth2D,synth3D,mixed2D,mixed3D}/
+Reads images from: data/datasets/{real,synthetic2D,synthetic3D}_normalized/{train,val,test}/images/
+Reads masks from:  data/datasets/{real,synthetic2D,synthetic3D}/{train,val,test}/masks/
+Writes to:         data/yaml/{real,synth2D,synth3D,mixed2D,mixed3D}/
+
+Run normalize_scenes.py first to populate the *_normalized/ image dirs. Masks
+stay in the un-normalized source dir (they're binary; nothing to normalize).
+This split lets normalize_scenes.py be re-run safely without overwriting
+originals — the *_normalized/ dirs are always derived freshly from the
+unchanged source images.
 
 Each output dataset contains:
     images/{train,val,test}/  — resized scene images (1024x1024)
@@ -203,9 +210,13 @@ def create_dataset(spec: DatasetSpec, output_root: Path) -> None:
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
-def _src(base: Path, split: str) -> Tuple[Path, Path]:
-    """Helper: return (images_dir, masks_dir) for a source split."""
-    return base / split / "images", base / split / "masks"
+def _src(img_base: Path, mask_base: Path, split: str) -> Tuple[Path, Path]:
+    """Helper: return (images_dir, masks_dir) for a source split.
+
+    Images come from the normalized variant; masks come from the original
+    (un-normalized) dir, since they're binary and don't need normalization.
+    """
+    return img_base / split / "images", mask_base / split / "masks"
 
 
 def main() -> None:
@@ -213,46 +224,50 @@ def main() -> None:
     datasets_root = data_root / "datasets"
     yaml_root = data_root / "yaml"
 
-    real = datasets_root / "real"
-    s2d = datasets_root / "synthetic2D"
-    s3d = datasets_root / "synthetic3D"
+    # Normalized images (from normalize_scenes.py) — masks stay in the originals.
+    real_img = datasets_root / "real_normalized"
+    s2d_img  = datasets_root / "synthetic2D_normalized"
+    s3d_img  = datasets_root / "synthetic3D_normalized"
+    real_msk = datasets_root / "real"
+    s2d_msk  = datasets_root / "synthetic2D"
+    s3d_msk  = datasets_root / "synthetic3D"
 
     datasets = [
         # ── Real model (1-stage) ──
         DatasetSpec("real", [
-            SourceSpec(*_src(real, "train"), "train"),
-            SourceSpec(*_src(real, "val"),   "val"),
-            SourceSpec(*_src(real, "test"),  "test"),
+            SourceSpec(*_src(real_img, real_msk, "train"), "train"),
+            SourceSpec(*_src(real_img, real_msk, "val"),   "val"),
+            SourceSpec(*_src(real_img, real_msk, "test"),  "test"),
         ]),
 
         # ── Synth2D stage 1: synth train/val, real test ──
         DatasetSpec("synth2D", [
-            SourceSpec(*_src(s2d, "train"),  "train"),
-            SourceSpec(*_src(s2d, "val"),    "val"),
-            SourceSpec(*_src(real, "test"),  "test"),
+            SourceSpec(*_src(s2d_img,  s2d_msk,  "train"), "train"),
+            SourceSpec(*_src(s2d_img,  s2d_msk,  "val"),   "val"),
+            SourceSpec(*_src(real_img, real_msk, "test"),  "test"),
         ]),
 
         # ── Synth3D stage 1: synth train/val, real test ──
         DatasetSpec("synth3D", [
-            SourceSpec(*_src(s3d, "train"),  "train"),
-            SourceSpec(*_src(s3d, "val"),    "val"),
-            SourceSpec(*_src(real, "test"),  "test"),
+            SourceSpec(*_src(s3d_img,  s3d_msk,  "train"), "train"),
+            SourceSpec(*_src(s3d_img,  s3d_msk,  "val"),   "val"),
+            SourceSpec(*_src(real_img, real_msk, "test"),  "test"),
         ]),
 
         # ── Mixed2D stage 3: 80 real (16x5) + 80 synth train, real val/test ──
         DatasetSpec("mixed2D", [
-            SourceSpec(*_src(real, "train"), "train", prefix="real_",    multiplier=5),
-            SourceSpec(*_src(s2d, "train"),  "train", prefix="synth2d_", max_scenes=80),
-            SourceSpec(*_src(real, "val"),   "val"),
-            SourceSpec(*_src(real, "test"),  "test"),
+            SourceSpec(*_src(real_img, real_msk, "train"), "train", prefix="real_",    multiplier=5),
+            SourceSpec(*_src(s2d_img,  s2d_msk,  "train"), "train", prefix="synth2d_", max_scenes=80),
+            SourceSpec(*_src(real_img, real_msk, "val"),   "val"),
+            SourceSpec(*_src(real_img, real_msk, "test"),  "test"),
         ]),
 
         # ── Mixed3D stage 3: 80 real (16x5) + 80 synth train, real val/test ──
         DatasetSpec("mixed3D", [
-            SourceSpec(*_src(real, "train"), "train", prefix="real_",    multiplier=5),
-            SourceSpec(*_src(s3d, "train"),  "train", prefix="synth3d_", max_scenes=80),
-            SourceSpec(*_src(real, "val"),   "val"),
-            SourceSpec(*_src(real, "test"),  "test"),
+            SourceSpec(*_src(real_img, real_msk, "train"), "train", prefix="real_",    multiplier=5),
+            SourceSpec(*_src(s3d_img,  s3d_msk,  "train"), "train", prefix="synth3d_", max_scenes=80),
+            SourceSpec(*_src(real_img, real_msk, "val"),   "val"),
+            SourceSpec(*_src(real_img, real_msk, "test"),  "test"),
         ]),
     ]
 
