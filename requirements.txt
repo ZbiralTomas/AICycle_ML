@@ -1,0 +1,9 @@
+# Install PyTorch separately first, matching your CUDA/driver:
+#   https://pytorch.org/get-started/locally/
+# ultralytics will otherwise pull a default torch wheel that may not match your GPU.
+
+numpy>=1.24
+opencv-python>=4.8
+PyYAML>=6.0
+ultralytics>=8.3
+scipy>=1.11
