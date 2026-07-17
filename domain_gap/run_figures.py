@@ -89,21 +89,35 @@ def correlations(res):
 
 
 def fig_scatter(res, key="dino", level="mask"):
-    fig, axes = plt.subplots(1, 2, figsize=(9, 4))
-    for ax, model in zip(axes, ["2D", "3D"]):
+    """Single panel: both data routes share the same x (gap) and y (AP) axes,
+    so overlaying them makes the contrast directly visible. Spearman rho/p go
+    in the LaTeX caption, not on the figure."""
+    fig, ax = plt.subplots(figsize=(6.2, 4.4))
+    styles = {"2D": ("#4C78A8", "o", "composited (2D) data"),
+              "3D": ("#E4572E", "s", "rendered (3D) data")}
+    rhos = {}
+    for model in ["2D", "3D"]:
         pc = res[key]["per_class"][level][f"real-{model}"]
         gaps = [pc[c]["mmd"] for c in CLASSES]
         aps = [AP[model][c] for c in CLASSES]
         rho, p = spearmanr(gaps, aps)
-        ax.scatter(gaps, aps, color="#4C78A8" if model == "2D" else "#E4572E", s=60)
+        rhos[model] = (rho, p)
+        color, marker, lab = styles[model]
+        ax.scatter(gaps, aps, color=color, marker=marker, s=55, label=lab,
+                   zorder=3)
         for c, g, a in zip(CLASSES, gaps, aps):
-            ax.annotate(c, (g, a), fontsize=8, xytext=(4, 4),
-                        textcoords="offset points")
-        ax.set_xlabel(f"{SPACES[key]} {level}-level gap (MMD$^2$)")
-        ax.set_ylabel(f"{model} per-class AP@0.5")
-        ax.set_title(f"real vs {model}   (Spearman ρ={rho:+.2f}, p={p:.2f})")
-    fig.tight_layout()  # no suptitle: the LaTeX caption carries the description
+            ax.annotate(c, (g, a), fontsize=7, color=color,
+                        xytext=(5, 3), textcoords="offset points")
+    ax.set_xlabel(f"{SPACES[key]} {level}-level domain gap (MMD$^2$)")
+    ax.set_ylabel("AP@0.5")
+    ax.margins(x=0.10, y=0.10)   # room for the point labels
+    ax.grid(alpha=0.25, zorder=0)
+    ax.legend(fontsize=8, loc="best")
+    fig.tight_layout()
     _save(fig, "fig_gap_vs_ap")
+    print(f"  rho 2D={rhos['2D'][0]:+.2f} (p={rhos['2D'][1]:.2f}) | "
+          f"rho 3D={rhos['3D'][0]:+.2f} (p={rhos['3D'][1]:.2f})")
+    return rhos
 
 
 def fig_tsne(key="dino", level="bbox"):
@@ -122,7 +136,10 @@ def fig_tsne(key="dino", level="bbox"):
         m = np.array(y) == dom
         ax.scatter(proj[m, 0], proj[m, 1], s=10, alpha=0.6,
                    color=colors[dom], label=dom)
-    ax.legend(); ax.set_xticks([]); ax.set_yticks([])
+    ax.legend()
+    ax.set_xticks([]); ax.set_yticks([])   # t-SNE coordinates are arbitrary
+    ax.set_xlabel("t-SNE dimension 1")
+    ax.set_ylabel("t-SNE dimension 2")
     fig.tight_layout()  # no title: the LaTeX caption carries the description
     _save(fig, "fig_tsne")
 
