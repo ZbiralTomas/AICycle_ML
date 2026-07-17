@@ -68,3 +68,53 @@ def handcrafted(img_rgb, mask=None):
 
     feats += [edge_density, grad_mean, grad_std, lap_var, hf_ratio, entropy]
     return np.asarray(feats, dtype=np.float32), hsv[..., 0][m]
+
+
+# ---------------------------------------------------------------------------
+# Extended descriptor: base + canonical texture features (GLCM/Haralick, LBP,
+# Gabor). Used only as a robustness check on the compact descriptor above.
+# ---------------------------------------------------------------------------
+GLCM_PROPS = ["contrast", "dissimilarity", "homogeneity", "energy",
+              "correlation", "ASM"]
+_LBP_P, _LBP_R, _LBP_BINS = 8, 1, 10       # uniform LBP -> P+2 = 10 bins
+
+EXT_FEATURE_NAMES = (
+    FEATURE_NAMES
+    + [f"glcm_{p}" for p in GLCM_PROPS]
+    + [f"lbp_{i}" for i in range(_LBP_BINS)]
+)
+
+
+def handcrafted_ext(img_rgb, mask=None):
+    """
+    Return (extended_feature_vector, hue_values).
+
+    Adds Haralick/GLCM and uniform LBP to `handcrafted`.
+    LBP is pooled over the valid pixels only; GLCM needs a
+    rectangular window and is therefore computed over the whole crop (with the
+    belt zeroed at the mask level), which is applied identically to every
+    domain and so does not favour one of them.
+    """
+    from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
+
+    base, hue = handcrafted(img_rgb, mask)
+    img = img_rgb.astype(np.uint8)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    if mask is None or mask.sum() < 16:
+        mask = np.ones(gray.shape, dtype=bool)
+
+    # --- GLCM / Haralick (averaged over 4 angles, 2 distances) ---
+    q = (gray // 4).astype(np.uint8)            # 64 grey levels
+    glcm = graycomatrix(q, distances=[1, 3],
+                        angles=[0, np.pi / 4, np.pi / 2, 3 * np.pi / 4],
+                        levels=64, symmetric=True, normed=True)
+    glcm_feats = [float(graycoprops(glcm, p).mean()) for p in GLCM_PROPS]
+
+    # --- uniform LBP histogram over valid pixels ---
+    lbp = local_binary_pattern(gray, _LBP_P, _LBP_R, method="uniform")
+    hist, _ = np.histogram(lbp[mask], bins=_LBP_BINS, range=(0, _LBP_BINS))
+    hist = hist.astype(np.float64)
+    lbp_feats = list(hist / (hist.sum() + 1e-12))
+
+    return (np.asarray(list(base) + glcm_feats + lbp_feats,
+                       dtype=np.float32), hue)
