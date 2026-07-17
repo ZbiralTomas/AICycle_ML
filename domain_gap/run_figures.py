@@ -24,6 +24,21 @@ OUT = HERE / "outputs"
 CACHE = HERE / "cache"
 CLASSES = ["AAC", "Ceramics", "Mortar", "Stones", "Tiles"]
 
+# paper figure names (PDF is the manuscript's figure format)
+PAPER_NAMES = {
+    "fig_mmd_decomposition": "fig_4_4_domain_gap_levels",
+    "fig_gap_vs_ap": "fig_4_5_gap_vs_ap",
+    "fig_tsne": "fig_4_6_tsne_domains",
+}
+
+
+def _save(fig, name):
+    """Save PNG (quick view) and PDF (manuscript) under the paper's name."""
+    fig.savefig(OUT / f"{name}.png", dpi=150)
+    fig.savefig(OUT / f"{PAPER_NAMES.get(name, name)}.pdf", bbox_inches="tight")
+    plt.close(fig)
+    print(f"saved {name}.png + {PAPER_NAMES.get(name, name)}.pdf")
+
 # per-class AP from paper Table 4
 AP = {
     "2D": {"AAC": 0.669, "Ceramics": 0.944, "Mortar": 0.583, "Stones": 0.629, "Tiles": 0.912},
@@ -53,12 +68,8 @@ def fig_decomposition(res):
         if ax is axes[0]:
             ax.set_ylabel("MMD$^2$ (domain gap)")
         ax.legend(fontsize=8)
-    fig.suptitle("Domain gap by granularity — at the fragment (mask) level the 3D gap "
-                 "exceeds the 2D gap in all three feature spaces", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(OUT / "fig_mmd_decomposition.png", dpi=150)
-    plt.close(fig)
-    print("saved fig_mmd_decomposition.png")
+    fig.tight_layout()  # no suptitle: the LaTeX caption carries the description
+    _save(fig, "fig_mmd_decomposition")
 
 
 def correlations(res):
@@ -91,11 +102,8 @@ def fig_scatter(res, key="dino", level="mask"):
         ax.set_xlabel(f"{SPACES[key]} {level}-level gap (MMD$^2$)")
         ax.set_ylabel(f"{model} per-class AP@0.5")
         ax.set_title(f"real vs {model}   (Spearman ρ={rho:+.2f}, p={p:.2f})")
-    fig.suptitle("Label-free per-class gap vs per-class detection AP", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(OUT / "fig_gap_vs_ap.png", dpi=150)
-    plt.close(fig)
-    print("saved fig_gap_vs_ap.png")
+    fig.tight_layout()  # no suptitle: the LaTeX caption carries the description
+    _save(fig, "fig_gap_vs_ap")
 
 
 def fig_tsne(key="dino", level="bbox"):
@@ -115,11 +123,8 @@ def fig_tsne(key="dino", level="bbox"):
         ax.scatter(proj[m, 0], proj[m, 1], s=10, alpha=0.6,
                    color=colors[dom], label=dom)
     ax.legend(); ax.set_xticks([]); ax.set_yticks([])
-    ax.set_title(f"t-SNE of {SPACES[key]} {level} embeddings by domain")
-    fig.tight_layout()
-    fig.savefig(OUT / "fig_tsne.png", dpi=150)
-    plt.close(fig)
-    print("saved fig_tsne.png")
+    fig.tight_layout()  # no title: the LaTeX caption carries the description
+    _save(fig, "fig_tsne")
 
 
 def main():
