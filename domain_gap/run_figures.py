@@ -46,6 +46,8 @@ AP = {
 }  # 3D uses Stage-1 (purely rendered) AP, matching the label-free dataset gap
 
 SPACES = {"statistical": "Handcrafted", "dino": "DINOv2", "yolo": "YOLO-COCO"}
+# Real/2D/3D dataset colors, matching the thesis results figures
+DATASET_COLORS = {"real": "#E53935", "2D": "#43A047", "3D": "#1E88E5"}
 LEVELS = ["scene", "bbox", "mask"]
 
 
@@ -61,8 +63,8 @@ def fig_decomposition(res):
         r2d = [res[key]["levels"][lv]["real-2D"]["mmd"] for lv in LEVELS]
         r3d = [res[key]["levels"][lv]["real-3D"]["mmd"] for lv in LEVELS]
         x = np.arange(len(LEVELS))
-        ax.bar(x - 0.19, r2d, 0.36, label="real vs 2D", color="#4C78A8")
-        ax.bar(x + 0.19, r3d, 0.36, label="real vs 3D", color="#E4572E")
+        ax.bar(x - 0.19, r2d, 0.36, label="real vs 2D", color=DATASET_COLORS["2D"])
+        ax.bar(x + 0.19, r3d, 0.36, label="real vs 3D", color=DATASET_COLORS["3D"])
         ax.set_xticks(x); ax.set_xticklabels(["scene", "bbox", "mask"])
         ax.set_title(title); ax.set_xlabel("granularity")
         if ax is axes[0]:
@@ -131,7 +133,7 @@ def fig_tsne(key="dino", level="bbox"):
     X = np.vstack(X)
     proj = TSNE(n_components=2, init="pca", perplexity=30, random_state=0).fit_transform(X)
     fig, ax = plt.subplots(figsize=(6, 5))
-    colors = {"real": "#333333", "2D": "#4C78A8", "3D": "#E4572E"}
+    colors = DATASET_COLORS
     for dom in ["real", "2D", "3D"]:
         m = np.array(y) == dom
         ax.scatter(proj[m, 0], proj[m, 1], s=10, alpha=0.6,
@@ -148,7 +150,7 @@ def main():
     res = load()
     fig_decomposition(res)
     correlations(res)
-    fig_scatter(res, key="dino", level="mask")
+    # fig_scatter cut from the paper (per-class Spearman correlation removed)
     fig_tsne(key="dino", level="bbox")
     print(f"\nfigures -> {OUT}")
 
