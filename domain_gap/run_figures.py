@@ -58,18 +58,20 @@ def load():
 
 
 def fig_decomposition(res):
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4), sharey=False)
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2), sharey=False)
     for ax, (key, title) in zip(axes, SPACES.items()):
         r2d = [res[key]["levels"][lv]["real-2D"]["mmd"] for lv in LEVELS]
         r3d = [res[key]["levels"][lv]["real-3D"]["mmd"] for lv in LEVELS]
         x = np.arange(len(LEVELS))
         ax.bar(x - 0.19, r2d, 0.36, label="real vs 2D", color=DATASET_COLORS["2D"])
         ax.bar(x + 0.19, r3d, 0.36, label="real vs 3D", color=DATASET_COLORS["3D"])
-        ax.set_xticks(x); ax.set_xticklabels(["scene", "bbox", "mask"])
-        ax.set_title(title); ax.set_xlabel("granularity")
+        ax.set_xticks(x); ax.set_xticklabels(["scene", "bbox", "mask"], fontsize=15)
+        ax.tick_params(axis="y", labelsize=14)
+        ax.set_title(title, fontsize=17)
+        ax.set_xlabel("granularity", fontsize=16)
         if ax is axes[0]:
-            ax.set_ylabel("MMD$^2$ (domain gap)")
-        ax.legend(fontsize=8)
+            ax.set_ylabel("MMD$^2$ (domain gap)", fontsize=16)
+        ax.legend(fontsize=15)
     fig.tight_layout()  # no suptitle: the LaTeX caption carries the description
     _save(fig, "fig_mmd_decomposition")
 
