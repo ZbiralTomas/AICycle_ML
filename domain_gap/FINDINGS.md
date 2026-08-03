@@ -47,7 +47,7 @@ AUC ≈ 0.998 previously seen on the bitumen data.
 a gap is. It supports only "a gap exists". All graded claims below rest on MMD
 (and energy/KID, which agree).
 
-## Finding 2 — at the fragment level, the 3D gap exceeds the 2D gap (ROBUST)
+## Finding 2 — the fragment gap is a TEXTURE gap (all three encoders kept)
 
 Mask-level (fragment-only) MMD²:
 
@@ -64,6 +64,8 @@ with non-overlapping bootstrap CIs. The **YOLO detector backbone is a near-tie**
 removed, real and composited fragments are nearly inseparable (AUC 0.997). This
 is the quantitative form of the "texture deficit" argued in §2.5, and explains
 why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
+
+**Framing (keeps all three encoders):** the gap is seen by the two appearance-sensitive encoders but *not* by the shape-tuned YOLO backbone, so by elimination it is a texture gap, not a shape gap — positive evidence that rendering reproduces geometry well but under-reproduces surface texture (§2.5). The YOLO near-tie is therefore corroboration, not a weakness.
 
 ## Finding 3 — the 2D gap is background-driven (PARTIALLY robust)
 
