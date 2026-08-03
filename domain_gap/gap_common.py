@@ -17,7 +17,7 @@ import random
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 YAML = Path("/Users/tomas/Desktop/PycharmProjects/AICycle-DS/data/yaml")
 DSET = Path("/Users/tomas/Desktop/PycharmProjects/AICycle-DS/data/datasets")
@@ -88,13 +88,20 @@ def _binarize_mask(arr):
 
 def load_scene(image_path, size=SCENE_SIZE):
     """Whole scene, resized square to the detector resolution."""
-    im = Image.open(image_path).convert("RGB").resize((size, size), Image.BILINEAR)
+    im = _open_oriented(image_path).resize((size, size), Image.BILINEAR)
     return np.asarray(im)
+
+
+def _open_oriented(image_path):
+    """Open an image, applying its EXIF orientation so pixels match the masks.
+    Real camera images carry an EXIF rotate-90 tag; without this the mask (in
+    display orientation) would be applied to rotated pixels."""
+    return ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
 
 
 def load_full(image_path):
     """Full-resolution scene RGB array (cache this across instances)."""
-    return np.asarray(Image.open(image_path).convert("RGB"))
+    return np.asarray(_open_oriented(image_path))
 
 
 def crops_from(im, mask_path, size=CROP_SIZE, pad=0.08):
