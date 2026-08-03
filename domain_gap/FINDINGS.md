@@ -50,7 +50,7 @@ Mask-level (fragment-only) MMD²:
 | DINOv2 | 0.087 | 0.129 | 1.48× |
 | COCO-YOLO | 0.147 | 0.181 | 1.23× |
 
-**All three independent rulers agree**: rendered fragments are 1.3–1.5× further
+**All three independent rulers agree**: rendered fragments are 1.2–1.5× further
 from real than composited 2D fragments. Non-overlapping bootstrap CIs. This is
 the quantitative form of the "texture deficit" argued qualitatively in §2.5, and
 explains why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
@@ -58,7 +58,7 @@ explains why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
 ## Finding 3 — the 2D gap is background-driven (PARTIALLY robust)
 
 Handcrafted MMD² falls 0.96 → 0.70 → 0.42 (scene→bbox→mask) for real↔2D, but only
-0.84 → 0.67 → 0.70 for real↔3D. So removing the belt **collapses** the 2D gap
+0.84 → 0.65 → 0.56 for real↔3D. So removing the belt **collapses** the 2D gap
 (−56%) while leaving the 3D gap far less reduced (−34%). DINOv2 shows the same
 ordering flip (2D above 3D at scene, below at mask).
 
