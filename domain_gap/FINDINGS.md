@@ -1,5 +1,11 @@
 # Domain-gap analysis — results
 
+> **Note (correction):** real images carry an EXIF rotate-90 tag; the loader now
+> applies `ImageOps.exif_transpose`. All numbers below are the corrected values.
+> The mask-level headline (3D fragment gap > 2D) and the belt-removal
+> decomposition both survived the fix. The per-class Spearman correlation was
+> subsequently cut from the paper (underpowered, n=5).
+
 Label-free measurement of the gap between the three training datasets (real /
 2D-synthetic / 3D-synthetic), at three granularities, in three feature spaces.
 Complements the metric-drop evidence already in the paper (Table 4).
@@ -40,9 +46,9 @@ Mask-level (fragment-only) MMD²:
 
 | Feature space | real↔2D | real↔3D | ratio |
 |---|---|---|---|
-| Handcrafted | 0.535 | 0.695 | 1.30× |
-| DINOv2 | 0.165 | 0.210 | 1.27× |
-| COCO-YOLO | 0.189 | 0.278 | 1.47× |
+| Handcrafted | 0.422 | 0.557 | 1.32× |
+| DINOv2 | 0.087 | 0.129 | 1.48× |
+| COCO-YOLO | 0.147 | 0.181 | 1.23× |
 
 **All three independent rulers agree**: rendered fragments are 1.3–1.5× further
 from real than composited 2D fragments. Non-overlapping bootstrap CIs. This is
@@ -51,9 +57,9 @@ explains why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
 
 ## Finding 3 — the 2D gap is background-driven (PARTIALLY robust)
 
-Handcrafted MMD² falls 0.96 → 0.63 → 0.54 (scene→bbox→mask) for real↔2D, but only
+Handcrafted MMD² falls 0.96 → 0.70 → 0.42 (scene→bbox→mask) for real↔2D, but only
 0.84 → 0.67 → 0.70 for real↔3D. So removing the belt **collapses** the 2D gap
-(−44%) while leaving the 3D gap essentially intact (−17%). DINOv2 shows the same
+(−56%) while leaving the 3D gap far less reduced (−34%). DINOv2 shows the same
 ordering flip (2D above 3D at scene, below at mask).
 
 ⚠️ **Not fully robust:** COCO-YOLO ranks real↔3D *above* real↔2D at scene level
