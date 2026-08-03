@@ -16,6 +16,7 @@ import re
 import random
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
@@ -86,6 +87,29 @@ def _binarize_mask(arr):
     return arr > 127
 
 
+def _peel_blue_edge(rgb, mask, iters=6, hue_lo=90, hue_hi=130, sat_min=40):
+    """Peel blue conveyor-belt pixels from the mask boundary, replicating the
+    GigECapture remove_halo.py cleanup that was applied to the 2D fragment
+    library. Real SAM2 masks were never cleaned, so without this the real mask
+    crops carry a belt rim while 2D/3D do not. No-op where the mask edge is not
+    blue (2D already clean, 3D masks are exact renders)."""
+    m = (mask.astype(np.uint8)) * 255
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    h, s = hsv[..., 0], hsv[..., 1]
+    blue = (h >= hue_lo) & (h <= hue_hi) & (s >= sat_min)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    for _ in range(iters):
+        edge = (m > 0) & (cv2.erode(m, kernel, iterations=1) == 0)
+        blue_edge = edge & blue
+        if not blue_edge.any():
+            break
+        m[blue_edge] = 0
+    refined = m > 127
+    if refined.sum() < 0.2 * mask.sum():   # safety: don't over-peel tiny frags
+        return mask
+    return refined
+
+
 def load_scene(image_path, size=SCENE_SIZE):
     """Whole scene, resized square to the detector resolution."""
     im = _open_oriented(image_path).resize((size, size), Image.BILINEAR)
@@ -124,7 +148,7 @@ def crops_from(im, mask_path, size=CROP_SIZE, pad=0.08):
     y0, y1 = max(0, y0 - py), min(im.shape[0], y1 + py + 1)
     x0, x1 = max(0, x0 - px), min(im.shape[1], x1 + px + 1)
     box = im[y0:y1, x0:x1]
-    m = mk[y0:y1, x0:x1]
+    m = _peel_blue_edge(box, mk[y0:y1, x0:x1])   # match the 2D library cleanup
     masked = box.copy()
     masked[~m] = 0
     to = lambda a, r=Image.BILINEAR: np.asarray(
