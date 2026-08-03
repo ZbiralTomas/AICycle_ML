@@ -5,6 +5,13 @@
 > The mask-level headline (3D fragment gap > 2D) and the belt-removal
 > decomposition both survived the fix. The per-class Spearman correlation was
 > subsequently cut from the paper (underpowered, n=5).
+>
+> **Note (halo):** the 2D fragment library had its belt halo removed before
+> compositing but the real SAM2 masks did not; the loader now peels the same
+> blue edge from every mask (crops_from). After this, real and composited
+> fragments are nearly indistinguishable at the mask level, and the 3D fragment
+> gap is clear in the texture encoders (2.1x handcrafted, 1.7x DINOv2) but a
+> near-tie for the YOLO detector backbone (1.06x, overlapping CIs).
 
 Label-free measurement of the gap between the three training datasets (real /
 2D-synthetic / 3D-synthetic), at three granularities, in three feature spaces.
@@ -31,7 +38,7 @@ agreement between them is stronger evidence than any single number.
 
 ## Finding 1 — a gap unambiguously exists (but AUC is saturated)
 
-The domain-classifier **AUC = 1.000 in every space, level, and pair**; every MMD
+The domain-classifier **AUC is ~1.0 (0.996–1.000) in every space, level, and pair**; every MMD
 permutation test gives p = 0.002. The domains are *trivially* separable
 (t-SNE shows three disjoint clusters, `fig_tsne.png`), consistent with the
 AUC ≈ 0.998 previously seen on the bitumen data.
@@ -46,25 +53,29 @@ Mask-level (fragment-only) MMD²:
 
 | Feature space | real↔2D | real↔3D | ratio |
 |---|---|---|---|
-| Handcrafted | 0.422 | 0.557 | 1.32× |
-| DINOv2 | 0.087 | 0.129 | 1.48× |
-| COCO-YOLO | 0.147 | 0.181 | 1.23× |
+| Handcrafted | 0.211 | 0.447 | 2.12× |
+| DINOv2 | 0.089 | 0.150 | 1.69× |
+| COCO-YOLO | 0.148 | 0.156 | 1.06× (tie) |
 
-**All three independent rulers agree**: rendered fragments are 1.2–1.5× further
-from real than composited 2D fragments. Non-overlapping bootstrap CIs. This is
-the quantitative form of the "texture deficit" argued qualitatively in §2.5, and
-explains why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
+The two **texture-sensitive** rulers agree strongly: rendered fragments are
+2.1× (handcrafted) and 1.7× (DINOv2) further from real than composited ones,
+with non-overlapping bootstrap CIs. The **YOLO detector backbone is a near-tie**
+(1.06×, overlapping CIs) — it keys on shape more than texture. Once the belt is
+removed, real and composited fragments are nearly inseparable (AUC 0.997). This
+is the quantitative form of the "texture deficit" argued in §2.5, and explains
+why 3D-from-scratch (0.419 mAP) underperforms 2D (0.747).
 
 ## Finding 3 — the 2D gap is background-driven (PARTIALLY robust)
 
-Handcrafted MMD² falls 0.96 → 0.70 → 0.42 (scene→bbox→mask) for real↔2D, but only
-0.84 → 0.65 → 0.56 for real↔3D. So removing the belt **collapses** the 2D gap
-(−56%) while leaving the 3D gap far less reduced (−34%). DINOv2 shows the same
+Handcrafted MMD² falls 0.96 → 0.70 → 0.21 (scene→bbox→mask) for real↔2D, but only
+0.84 → 0.65 → 0.45 for real↔3D. So removing the belt **collapses** the 2D gap
+(−78%) while leaving the 3D gap far less reduced (−47%). DINOv2 shows the same
 ordering flip (2D above 3D at scene, below at mask).
 
 ⚠️ **Not fully robust:** COCO-YOLO ranks real↔3D *above* real↔2D at scene level
 too, so the **scene-level ordering is encoder-dependent** and should not be
-claimed. Only the fragment-level ordering (Finding 2) is robust across all three.
+claimed. The fragment-level 3D>2D gap is clear only in the texture encoders
+(Finding 2), not the YOLO backbone.
 
 ## Finding 4 — the gap predicts 3D's per-class failures, but not 2D's
 

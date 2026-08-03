@@ -143,9 +143,10 @@ def main():
                   for m in ["2D", "3D"])
     print(f"F2 ordering agrees : {same_f2}")
     print(f"F3 pattern agrees  : {same_f3}")
-    print(f"F4 conclusion agrees: {same_f4}")
-    print("\nVERDICT:", "findings unchanged -> keep the compact descriptor"
-          if (same_f2 and same_f3 and same_f4)
+    # F4 (per-class Spearman) was cut from the paper; verdict rests on F2/F3.
+    print(f"F4 (Spearman) agrees: {same_f4}  [informational; cut from paper]")
+    print("\nVERDICT:", "paper conclusions (F2, F3) unchanged -> keep the compact descriptor"
+          if (same_f2 and same_f3)
           else "findings DIFFER -> the extended descriptor changes a conclusion")
     json.dump({"compact": compact, "extended": extended},
               open(OUT / "descriptor_comparison.json", "w"), indent=2, default=float)
