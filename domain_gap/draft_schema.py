@@ -20,7 +20,7 @@ import gap_common as gc
 OUT = __import__("pathlib").Path(__file__).parent / "outputs"
 
 # ---- pick one clear real example instance ----
-PAD = 0.08     # tight box around the fragment (matches crops_from in the analysis)
+PAD = 0.00     # box flush to the fragment's extent (no surrounding margin)
 inst = gc.sample_instances("real", ["test"], per_class=1, seed=0)
 it = [x for x in inst if x["class"] == "Ceramics"][0]
 full = gc.load_full(it["image_path"])
