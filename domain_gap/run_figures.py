@@ -16,6 +16,11 @@ from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams.update({          # match the manuscript font (as in Figure 5)
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+})
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
 

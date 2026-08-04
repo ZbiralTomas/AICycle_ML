@@ -6,6 +6,11 @@ is described in the text, so it is not drawn here.
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams.update({          # match the manuscript font (as in Figure 5)
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+})
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from PIL import Image
@@ -15,7 +20,7 @@ import gap_common as gc
 OUT = __import__("pathlib").Path(__file__).parent / "outputs"
 
 # ---- pick one clear real example instance ----
-PAD = 0.18
+PAD = 0.08     # tight box around the fragment (matches crops_from in the analysis)
 inst = gc.sample_instances("real", ["test"], per_class=1, seed=0)
 it = [x for x in inst if x["class"] == "Ceramics"][0]
 full = gc.load_full(it["image_path"])
